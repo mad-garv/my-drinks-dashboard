@@ -1,122 +1,164 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useEffect, useState } from "react"
+import { getSession, onAuthStateChange, signOut } from "./services/authService"
+import { addCoffee, deleteCoffee, getCoffees, updateCoffee } from "./services/coffeeService"
 import './App.css'
+import Login from "./components/Login"
+import Header from "./components/Header"
+import Hero from "./components/Hero"
+import Container from "./components/Container"
+import CoffeeModal from "./components/CoffeeModal"
+import CoffeeInfo from "./components/CoffeeInfo"
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [session, setSession] = useState(null)
+  const [checkingSession, setCheckingSession] = useState(true)
+  const [error, setError] = useState("")
+
+  const [coffees, setCoffees] = useState([])
+  const [loadingCoffees, setLoadingCoffees] = useState(true)
+  const [coffeeError, setCoffeeError] = useState("")
+
+  const [showAddCoffee, setShowAddCoffee] = useState(false)
+  const [selectedCoffee, setSelectedCoffee] = useState(null)
+  const [editingCoffee, setEditingCoffee] = useState(null)
+
+  useEffect(() => {
+    let active = true
+
+    async function initializeAuth() {
+      try {
+        const currentSession = await getSession()
+
+        if (active) {
+          setSession(currentSession)
+        }
+      } catch (err) {
+        if (active) {
+          setError(err.message || "Unable to check your session.")
+        }
+      } finally {
+        if (active) {
+          setCheckingSession(false)
+        }
+      }
+    }
+
+    initializeAuth()
+
+    const unsubscribe = onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+    })
+
+    return () => {
+      active = false
+      unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!session) {
+      return
+    }
+
+    let cancelled = false
+
+    async function loadCoffees() {
+      setLoadingCoffees(true)
+      setCoffeeError("")
+
+      try {
+        const data = await getCoffees()
+
+        if (!cancelled) {
+          setCoffees(data)
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setCoffeeError(error.message)
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingCoffees(false)
+        }
+      }
+    }
+
+    loadCoffees()
+
+    return () => {
+      cancelled = true
+    }
+  }, [session])
+
+  if (checkingSession) {
+    return <main><p>Checking session...</p></main>
+  }
+
+  if (error) {
+    return <main><p role="alert">{error}</p></main>
+  }
+
+  if (!session) {
+    return <Login />
+  }
+
+  async function refreshCoffees() {
+    const data = await getCoffees()
+    setCoffees(data)
+    return data
+  }
+
+  async function saveNewCoffee(coffee) {
+    await addCoffee(coffee, coffee.imageFile)
+    setShowAddCoffee(false)
+    await refreshCoffees()
+  }
+
+  async function saveCoffeeChanges(coffee) {
+    await updateCoffee(editingCoffee.id, { ...coffee, image_path: editingCoffee.image_path })
+    setEditingCoffee(null)
+    const data = await refreshCoffees()
+    setSelectedCoffee(data.find(item => item.id === editingCoffee.id) || null)
+  }
+
+  async function removeCoffee(id) {
+    await deleteCoffee(id)
+    setSelectedCoffee(null)
+    await refreshCoffees()
+  }
+
+  if (selectedCoffee) {
+    return <>
+      <CoffeeInfo coffee={selectedCoffee} onBack={() => setSelectedCoffee(null)} onEdit={() => setEditingCoffee(selectedCoffee)} onDelete={removeCoffee} />
+      {editingCoffee && <CoffeeModal coffee={editingCoffee} onClose={() => setEditingCoffee(null)} onSaved={saveCoffeeChanges} />}
+    </>
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <main>
+      <Header />
+      <Hero />
 
-      <div className="ticks"></div>
+      {loadingCoffees ? (
+        <p>Loading coffees...</p>
+      ) : coffeeError ? (
+        <p>Error loading coffees: {coffeeError}</p>
+      ) : (
+        <Container
+          coffees={coffees}
+          onAddCoffee={() => setShowAddCoffee(true)}
+          onSelectCoffee={setSelectedCoffee}
+        />
+      )}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      {showAddCoffee && (
+        <CoffeeModal
+          onClose={() => setShowAddCoffee(false)}
+          onSaved={saveNewCoffee}
+        />
+      )}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <footer className="app-footer"><span>Signed in as {session.user.email}</span><button className="text-button" onClick={signOut}>Sign out</button></footer>
+    </main>
   )
 }
-
-export default App
