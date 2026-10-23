@@ -10,8 +10,15 @@ export default function CoffeeModal({ coffee, onClose, onSaved }) {
   const [form, setForm] = useState(() => coffee ? {
     ...emptyForm,
     name: coffee.name || "",
-    ingredients: coffee.ingredients || "",
-    method: coffee.method || "",
+
+    ingredients: Array.isArray(coffee.ingredients)
+      ? coffee.ingredients.join("\n")
+      : coffee.ingredients || "",
+
+    method: Array.isArray(coffee.method)
+      ? coffee.method.join("\n")
+      : coffee.method || "",
+      
     tried: Boolean(coffee.tried),
     tried_date: coffee.tried_date || "",
     rating: coffee.rating ?? "",
@@ -34,6 +41,17 @@ export default function CoffeeModal({ coffee, onClose, onSaved }) {
     try {
       await onSaved({
         ...form,
+
+        ingredients: form.ingredients
+          .split("\n")
+          .map(line => line.trim())
+          .filter(Boolean),
+
+        method: form.method
+          .split("\n")
+          .map(line => line.trim())
+          .filter(Boolean),
+
         tried_date: form.tried ? form.tried_date || null : null,
         rating: form.tried && form.rating !== "" ? Number(form.rating) : null,
         note: form.tried ? form.note : "",
