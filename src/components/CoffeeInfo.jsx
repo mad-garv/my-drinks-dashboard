@@ -66,7 +66,7 @@ export default function CoffeeInfo({ coffee, onBack, onEdit, onDelete }) {
               )
                 : (
                   coffee.ingredients.map((ingredientLine, index) => {
-                    const dashPosition = ingredientLine.indexOf("–")
+                    const dashPosition = ingredientLine.indexOf("-")
 
                     const amount =
                       dashPosition === -1

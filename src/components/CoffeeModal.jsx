@@ -18,7 +18,7 @@ export default function CoffeeModal({ coffee, onClose, onSaved }) {
     method: Array.isArray(coffee.method)
       ? coffee.method.join("\n")
       : coffee.method || "",
-      
+
     tried: Boolean(coffee.tried),
     tried_date: coffee.tried_date || "",
     rating: coffee.rating ?? "",
@@ -75,15 +75,6 @@ export default function CoffeeModal({ coffee, onClose, onSaved }) {
         <label htmlFor="coffee-name">Title</label>
         <input id="coffee-name" type="text" maxLength="60" required value={form.name} onChange={e => update("name", e.target.value)} />
 
-        <label>Photo <span>(optional)</span></label>
-        <div className="photo-controls">
-          <label className="photo-button" htmlFor="image-upload">Upload photo</label>
-          <input id="image-upload" type="file" accept="image/*" onChange={e => { const file = e.target.files?.[0] || null; setImageFile(file); setPreview(file ? URL.createObjectURL(file) : null) }} />
-          <label className="photo-button" htmlFor="camera-upload">Take photo</label>
-          <input id="camera-upload" type="file" accept="image/*" capture="environment" onChange={e => { const file = e.target.files?.[0] || null; setImageFile(file); setPreview(file ? URL.createObjectURL(file) : null) }} />
-        </div>
-        {(preview || (coffee && getCoffeeImageUrl(coffee.image_path))) && <img className="image-preview" src={preview || getCoffeeImageUrl(coffee.image_path)} alt="Coffee preview" />}
-
         <label htmlFor="ingredients-input">Ingredients</label>
         <textarea id="ingredients-input" rows="4" placeholder="18 g — Espresso&#10;100 ml — Whole milk" value={form.ingredients} onChange={e => update("ingredients", e.target.value)} />
         <label htmlFor="method-input">Method</label>
@@ -95,6 +86,16 @@ export default function CoffeeModal({ coffee, onClose, onSaved }) {
           <input id="tried-date" type="date" value={form.tried_date} onChange={e => update("tried_date", e.target.value)} />
           <label htmlFor="coffee-rating">Rating <span>(0–10)</span></label>
           <input id="coffee-rating" type="number" min="0" max="10" step="0.1" placeholder="e.g. 9.1" value={form.rating} onChange={e => update("rating", e.target.value)} />
+
+          <label>Photo <span>(optional)</span></label>
+          <div className="photo-controls">
+            <label className="photo-button" htmlFor="image-upload">Upload photo</label>
+            <input id="image-upload" type="file" accept="image/*" onChange={e => { const file = e.target.files?.[0] || null; setImageFile(file); setPreview(file ? URL.createObjectURL(file) : null) }} />
+            <label className="photo-button" htmlFor="camera-upload">Take photo</label>
+            <input id="camera-upload" type="file" accept="image/*" capture="environment" onChange={e => { const file = e.target.files?.[0] || null; setImageFile(file); setPreview(file ? URL.createObjectURL(file) : null) }} />
+          </div>
+          {(preview || (coffee && getCoffeeImageUrl(coffee.image_path))) && <img className="image-preview" src={preview || getCoffeeImageUrl(coffee.image_path)} alt="Coffee preview" />}
+
           <label htmlFor="coffee-note">Small note <span>(optional)</span></label>
           <input id="coffee-note" type="text" value={form.note} onChange={e => update("note", e.target.value)} placeholder="e.g. Bright, sweet, and worth repeating" />
           <label htmlFor="coffee-thoughts">Additional thoughts <span>(optional)</span></label>
